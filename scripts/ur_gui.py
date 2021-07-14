@@ -18,11 +18,13 @@ class SampleApp(tk.Tk):
         self._frame = new_frame
         self._frame.pack()
 
+
 class StartPage(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         tk.Button(self, text="Begin", width=25, height=10,
                   command=lambda: master.switch_frame(PageOne)).pack(fill="both", expand=True, padx=100, pady=100)
+
 
 class PageOne(tk.Frame):
     def __init__(self, master):
@@ -34,33 +36,38 @@ class PageOne(tk.Frame):
                   command=lambda: master.switch_frame(StartPage)).pack()
 
         picture = tk.PhotoImage(file="rgb_right.png")
-        tk.Frame.photo = picture    #Needed to prevent garbage collector
-        image_label = tk.Label(self, image=picture)
-        image_label.bind("<Button-1>", self.click)
-        image_label.pack(side="left")
+        tk.Frame.photo = picture  # Needed to prevent garbage collector
+        image_button = tk.Button(self, image=picture, command=lambda: master.switch_frame(PictureSelected))
+        image_button.bind("<Button-1>", self.click)
+        image_button.pack(side="left")
+        #image_label = tk.Label(self, image=picture)
+        #image_label.bind("<Button-1>", lambda event, arg=master: self.click(event, arg))
+        #image_label.pack(side="left")
 
     def click(self, event):
-        #print(arg)
+        #arg.switch_frame(PageTwo)
+        print("Event done")
+        #self.master.controller.switch_frame(PageTwo)
         print("Mouse position: {} {}".format(event.x, event.y))
-        self.button_pushed = True
         return
 
 
-class PageTwo(tk.Frame):
+class PictureSelected(tk.Frame):
     def __init__(self, master):
-        tk.Label(self, text="Please confirm whether this is the correct object").pack(side="top", fill="x", pady=10)
-        tk.Button(self, text="Return to start page",
-                  command=lambda: master.switch_frame(StartPage)).pack()
-        tk.Button(self, text="True",
-                  command=lambda: master.switch_frame(PageOne)).pack()
-        tk.Button(self, text="False",
-                  command=lambda: master.switch_frame(StartPage)).pack()
+        tk.Frame.__init__(self, master)
+
+        tk.Label(self, text="Please confirm whether this is the correct object").pack()
 
         picture = tk.PhotoImage(file="rgb_right.png")
-        tk.Frame.photo = picture    #Needed to prevent garbage collector
-        image_label = tk.Label(self, image=picture)
-        image_label.bind("<Button-1>", motion)
-        image_label.pack(side="left")
+        tk.Frame.photo = picture  # Needed to prevent garbage collector
+        tk.Label(self, image=picture).pack(side="left")
+
+
+        tk.Button(self, text="Correct", width=25, height=10,
+                  command=lambda: master.switch_frame(StartPage)).pack(side="top", anchor="ne")
+
+        tk.Button(self, text="Wrong", width=25, height=10,
+                  command=lambda: master.switch_frame(PageOne)).pack(side="top", anchor="ne")
 
 """
 def motion(event):
@@ -68,9 +75,9 @@ def motion(event):
     return
 """
 
+
 if __name__ == "__main__":
     app = SampleApp()
-    #app.configure(bg="DarkSlateGray")
-    #app.wm_geometry("600x600")
+    # app.configure(bg="DarkSlateGray")
+    # app.wm_geometry("600x600")
     app.mainloop()
-
