@@ -3,6 +3,11 @@ try:
 except ImportError:
     import Tkinter as tk
 
+import rospy
+from std_msgs.msg import Bool
+
+#TODO Flag testing only
+flag = None
 
 class SampleApp(tk.Tk):
     def __init__(self):
@@ -17,16 +22,19 @@ class SampleApp(tk.Tk):
             self._frame.destroy()
         self._frame = new_frame
         self._frame.pack()
+        #TODO Flag here for testing only
+        print("flag_value:{}".format(flag))
 
 
 class StartPage(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         tk.Button(self, text="Begin", width=25, height=10,
-                  command=lambda: master.switch_frame(PageOne)).pack(fill="both", expand=True, padx=100, pady=100)
+                  command=lambda: master.switch_frame(PictureSelect)).pack(fill="both", expand=True, padx=100, pady=100)
 
 
-class PageOne(tk.Frame):
+
+class PictureSelect(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         self.button_pushed = False
@@ -40,14 +48,9 @@ class PageOne(tk.Frame):
         image_button = tk.Button(self, image=picture, command=lambda: master.switch_frame(PictureSelected))
         image_button.bind("<Button-1>", self.click)
         image_button.pack(side="left")
-        #image_label = tk.Label(self, image=picture)
-        #image_label.bind("<Button-1>", lambda event, arg=master: self.click(event, arg))
-        #image_label.pack(side="left")
 
     def click(self, event):
-        #arg.switch_frame(PageTwo)
         print("Event done")
-        #self.master.controller.switch_frame(PageTwo)
         print("Mouse position: {} {}".format(event.x, event.y))
         return
 
@@ -62,21 +65,42 @@ class PictureSelected(tk.Frame):
         tk.Frame.photo = picture  # Needed to prevent garbage collector
         tk.Label(self, image=picture).pack(side="left")
 
+        tk.Button(self, text="Correct", width=25, height=13,
+                  command=lambda: master.switch_frame(ConfirmSuccess)).pack(side="top", anchor="ne")
 
-        tk.Button(self, text="Correct", width=25, height=10,
-                  command=lambda: master.switch_frame(StartPage)).pack(side="top", anchor="ne")
+        tk.Button(self, text="Wrong", width=25, height=13,
+                  command=lambda: master.switch_frame(PictureSelect)).pack(side="top", anchor="ne")
 
-        tk.Button(self, text="Wrong", width=25, height=10,
-                  command=lambda: master.switch_frame(PageOne)).pack(side="top", anchor="ne")
 
-"""
-def motion(event):
-    print("Mouse position: {} {}".format(event.x, event.y))
-    return
-"""
+class ConfirmSuccess(tk.Frame):
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+        tk.Label(self, text="Please wait, system is processing").pack()
+        #TODO This is here for testing only
+        global flag
+        flag = None
+
+class Success(tk.Frame):
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+        tk.Label(self, text="Success, object selected properly").pack()
+
+class Failure(tk.Frame):
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+        tk.Label(self, text="Failure, object missed").pack()
+
+def flag_cb(data):
+    global flag
+    flag = data.data
+    #TODO Flag here for testing
+    print("Flag Value:{}".format(flag))
 
 
 if __name__ == "__main__":
+    rospy.init_node("Listener", anonymous=True)
+    #Flag testing only
+    rospy.Subscriber("flag", Bool, flag_cb)
     app = SampleApp()
     # app.configure(bg="DarkSlateGray")
     # app.wm_geometry("600x600")
