@@ -5,6 +5,7 @@ except ImportError:
 
 import rospy
 from std_msgs.msg import Bool
+from std_msgs.msg import UInt32MultiArray
 import cv2
 
 gui_wait = None
@@ -233,6 +234,10 @@ class PictureZoomed(tk.Frame):
         self.cv_image = cv2.imread("image_zoomed.png")
         self.cv_image = cv2.circle(self.cv_image, (event.x, event.y), 10, (0, 255, 0), -1)
         cv2.imwrite("image_zoomed.png", self.cv_image)
+        real_x = round(zoom_coordinate[0] - (self.x_limits / 2) + event.x / float(self.x_dim) * self.x_limits)
+        real_y = round(zoom_coordinate[1] - (self.y_limits / 2) + event.y / float(self.y_dim) * self.y_limits)
+        global circle_coordinate
+        circle_coordinate = (real_x, real_y)
 
 
 class PictureSelected(tk.Frame):
@@ -253,6 +258,8 @@ class PictureSelected(tk.Frame):
 
         self.yes_button = tk.Button(self, text="Correct", width=25, height=13,
                                     command=lambda: master.switch_frame(Success))
+
+        self.yes_button.bind("<Button-1>", self.publish_point)
 
         self.no_button = tk.Button(self, text="Wrong", width=25, height=13,
                                    command=lambda: master.switch_frame(PictureInitial))
@@ -283,6 +290,12 @@ class PictureSelected(tk.Frame):
             else:
                 self.frame = 0
         self.after(update_rate, self.update)
+
+    def publish_point(self, event):
+        #X, Y format
+        array = UInt32MultiArray()
+        array.data = [circle_coordinate[0], circle_coordinate[1]]
+        point_pub.publish(array)
 
 
 class Success(tk.Frame):
@@ -380,6 +393,7 @@ if __name__ == "__main__":
     rospy.init_node("Listener", anonymous=True)
     rospy.Subscriber("gui_wait", Bool, gui_wait_cb)
     rospy.Subscriber("success", Bool, success_cb)
+    point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     app = SampleApp()
     # app.wm_geometry("600x600")
     app.mainloop()
