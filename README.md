@@ -13,6 +13,11 @@ low.
 **/success**  
 This is published by the researched performing the subject. Determine whether the trial was a success or failure.
 
+**Publishers**  
+**/point**
+Publishes a UInt32MultiArray with X at position zero and Y at position 1. This is the point the user clicked relative to
+the original image
+
 # Running Code
 * git clone https://github.com/PatrickCPE/ur_scooter_gui.git ~/catkin_ws/src/
 * cd ~/catkin_ws
@@ -22,9 +27,11 @@ This is published by the researched performing the subject. Determine whether th
 # Requirements
 For Python 2.7
 * pip install python-tk
+* pip install opencv-python
 
 For Python 3.8
-* pip install python3-tk    (Should be installed by default)
+* pip3 install python3-tk    (Should be installed by default)
+* pip3 install opencv-python    (Should be installed by default)
 
 To you want to build docs   (Docs only built on python3)
 * pip install -U python3-sphinx
