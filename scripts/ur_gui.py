@@ -5,10 +5,15 @@ except ImportError:
 
 import rospy
 from std_msgs.msg import Bool
+import cv2
 
 gui_wait = None
 success = None
 update_rate = 100  # In milliseconds
+zoom_coordinate = None
+circle_coordinate = None
+# TODO Make this update on its own
+circle_coordinate = (320, 200)
 
 
 class SampleApp(tk.Tk):
@@ -38,7 +43,7 @@ class StartPage(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         self.button = tk.Button(self, text="Begin", width=25, height=10,
-                                command=lambda: master.switch_frame(PictureSelect))
+                                command=lambda: master.switch_frame(PictureInitial))
         self.button.bind("<Button-1>", self.clear_globals)
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
 
@@ -61,7 +66,7 @@ class StartPage(tk.Frame):
         success = None
 
 
-class PictureSelect(tk.Frame):
+class PictureInitial(tk.Frame):
     """
     This frame loads the initial unzoomed image taken from the camera, receives a user click, and then publishes over
     ROS
@@ -79,7 +84,7 @@ class PictureSelect(tk.Frame):
         self.image_label = tk.Label(self, image=self.picture)
         self.image_label.pack()
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
-        self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureSelected))
+        self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureZoomed))
 
         global gui_wait
         gui_wait = True
@@ -125,7 +130,109 @@ class PictureSelect(tk.Frame):
         """
         print("Event done")
         print("Mouse position: {} {}".format(event.x, event.y))
+        global zoom_coordinate
+        zoom_coordinate = (event.x, event.y)
         return
+
+
+# TODO Zoomy Boi
+class PictureZoomed(tk.Frame):
+    """
+    This frame loads the zoomed image via opencv, It Publishes the XY location on the image wherein the circle should be
+    drawn by the PictureSelected Frame. The XY location is the pixel relative to the original unzoomed image
+    """
+
+    def __init__(self, master):
+        tk.Frame.__init__(self, master)
+
+        self.frame = 0
+
+        self.label = tk.Label(self, text="Please click the object on the zoomed in image").pack(side="top", fill="x",
+                                                                                                pady=10)
+        self.zoom_point = zoom_coordinate
+
+        #TODO ZOOM IMAGE TEST
+        #self.cv_image = cv2.imread("rgb_right.png")
+        self.cv_image = cv2.imread("rgb_right.png")
+        print("dimensions:{}".format(self.cv_image.shape))
+        self.x_dim = self.cv_image.shape[1]
+        self.y_dim = self.cv_image.shape[0]
+        print("x:{} y:{}".format(self.x_dim, self.y_dim))
+
+        self.x_limits = round(self.x_dim / 4)
+        self.y_limits = round(self.y_dim / 4)
+
+        self.x_region = [zoom_coordinate[0] - round((self.x_limits / 2 - 1)), zoom_coordinate[0] + round((self.x_limits / 2))]
+        self.y_region = [zoom_coordinate[1] - round((self.y_limits / 2 - 1)), zoom_coordinate[1] + round((self.y_limits / 2))]
+
+        if self.x_region[0] < 0:
+            self.x_region = [0, self.x_limits - 1]
+        elif self.x_region[1] > self.x_dim:
+            self.x_region = [(self.x_dim - self.x_limits - 1), self.x_dim]
+
+        if self.y_region[0] < 0:
+            self.y_region = [0, self.y_limits - 1]
+        elif self.y_region[1] > self.y_dim:
+            self.y_region = [self.y_dim - self.y_limits - 1, self.y_dim]
+
+        self.cv_image = self.cv_image[self.y_region[0]:self.y_region[1], self.x_region[0]:self.x_region[1], :]
+
+        self.cv_image = cv2.resize(self.cv_image, (self.x_dim, self.y_dim), interpolation=cv2.INTER_CUBIC)
+        cv2.imwrite("image_zoomed.png", self.cv_image)
+
+
+        # TODO remove or integrate this part
+        self.picture = tk.PhotoImage(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+        self.image_label = tk.Label(self, image=self.picture)
+        self.image_label.pack()
+        tk.Frame.photo = self.picture  # Needed to prevent garbage collector
+        # TODO Go back to original frame switch once click is fixed
+        self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureSelected))
+        global gui_wait
+        gui_wait = True
+
+        master.after(update_rate, self.update())
+
+    def update(self):
+        """
+        Deletes the loading wheel once system is ready, updates image and zooms in on it and loads it. Then  it binds
+        image to callback. Just spins wheel if system is waiting
+
+        :return: None
+        """
+        if not gui_wait:
+            self.image_label.destroy()
+            self.picture.configure(file="image_zoomed.png", format="png")
+            self.image_button.pack(side="left")
+            self.image_button.bind("<Button-1>", self.click)
+        else:
+            self.wait_spin()
+        self.after(update_rate, self.update)
+
+    def wait_spin(self):
+        """
+        Spins the gif animation by altering the image frame
+
+        :return: None
+        """
+        if self.frame < 16:
+            self.frame = self.frame + 1
+            self.picture.configure(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+        else:
+            self.frame = 0
+
+    def click(self, event):
+        """
+        Currently only prints the mouseclick
+        #TODO Implement ROS Publisher and tap to zoom
+
+        :param event: Mouseclick on Image
+        :return: None
+        """
+        print("Mouse position: {} {}".format(event.x, event.y))
+        self.cv_image = cv2.imread("image_zoomed.png")
+        self.cv_image = cv2.circle(self.cv_image, (event.x, event.y), 10, (0, 255, 0), -1)
+        cv2.imwrite("image_zoomed.png", self.cv_image)
 
 
 class PictureSelected(tk.Frame):
@@ -148,7 +255,7 @@ class PictureSelected(tk.Frame):
                                     command=lambda: master.switch_frame(Success))
 
         self.no_button = tk.Button(self, text="Wrong", width=25, height=13,
-                                   command=lambda: master.switch_frame(PictureSelect))
+                                   command=lambda: master.switch_frame(PictureInitial))
 
         global gui_wait
         gui_wait = True
@@ -166,7 +273,7 @@ class PictureSelected(tk.Frame):
         if not gui_wait:
             self.yes_button.pack(side="top", anchor="ne")
             self.no_button.pack(side="top", anchor="ne")
-            self.picture.configure(file="rgb_right.png", format="png")
+            self.picture.configure(file="image_zoomed.png", format="png")
         elif gui_wait is None:
             print("Error gui_wait is of type None")
         else:
