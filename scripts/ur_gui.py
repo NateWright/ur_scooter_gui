@@ -160,11 +160,11 @@ class PictureZoomed(tk.Frame):
         self.y_dim = self.cv_image.shape[0]
         print("x:{} y:{}".format(self.x_dim, self.y_dim))
 
-        self.x_limits = round(self.x_dim / 4)
-        self.y_limits = round(self.y_dim / 4)
+        self.x_limits = int(round(self.x_dim / 4))
+        self.y_limits = int(round(self.y_dim / 4))
 
-        self.x_region = [zoom_coordinate[0] - round((self.x_limits / 2 - 1)), zoom_coordinate[0] + round((self.x_limits / 2))]
-        self.y_region = [zoom_coordinate[1] - round((self.y_limits / 2 - 1)), zoom_coordinate[1] + round((self.y_limits / 2))]
+        self.x_region = [zoom_coordinate[0] - int(round((self.x_limits / 2 - 1))), zoom_coordinate[0] + int(round((self.x_limits / 2)))]
+        self.y_region = [zoom_coordinate[1] - int(round((self.y_limits / 2 - 1))), zoom_coordinate[1] + int(round((self.y_limits / 2)))]
 
         if self.x_region[0] < 0:
             self.x_region = [0, self.x_limits - 1]
@@ -217,8 +217,8 @@ class PictureZoomed(tk.Frame):
         self.cv_image = cv2.imread("image_zoomed.png")
         self.cv_image = cv2.circle(self.cv_image, (event.x, event.y), 10, (0, 255, 0), -1)
         cv2.imwrite("image_zoomed.png", self.cv_image)
-        real_x = round(zoom_coordinate[0] - (self.x_limits / 2) + event.x / float(self.x_dim) * self.x_limits)
-        real_y = round(zoom_coordinate[1] - (self.y_limits / 2) + event.y / float(self.y_dim) * self.y_limits)
+        real_x = int(round(zoom_coordinate[0] - (self.x_limits / 2) + event.x / float(self.x_dim) * self.x_limits))
+        real_y = int(round(zoom_coordinate[1] - (self.y_limits / 2) + event.y / float(self.y_dim) * self.y_limits))
         if real_x < 0:
             real_x = 0
         elif real_x > self.x_dim:
