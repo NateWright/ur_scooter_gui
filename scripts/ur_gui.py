@@ -6,15 +6,17 @@ except ImportError:
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import UInt32MultiArray
+from sensor_msgs.msg import Image
 import cv2
+from cv_bridge import CvBridge, CvBridgeError
 
 gui_wait = None
 success = None
+image_required = False
 update_rate = 50  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
-# TODO Make this update on its own
-circle_coordinate = (320, 200)
+image = None
 
 
 class SampleApp(tk.Tk):
@@ -57,7 +59,8 @@ class StartPage(tk.Frame):
     @staticmethod
     def clear_globals(event):
         """
-        resets the gui_wait and success variables to None
+        resets the gui_wait and success variables to None. Sets the image_required variable high.
+
         :param event: Start Page Button Push
         :return: None
         """
@@ -65,12 +68,14 @@ class StartPage(tk.Frame):
         gui_wait = None
         global success
         success = None
+        global image_required
+        image_required = True
 
 
 class PictureInitial(tk.Frame):
     """
     This frame loads the initial unzoomed image taken from the camera, receives a user click, and then publishes over
-    ROS. /gui_wait must be pulled low by the system in order for the image to update and image.png must exist
+    ROS. /gui_wait must be pulled low by the system in order for the image to update and test_image.png must exist
     """
 
     def __init__(self, master):
@@ -99,9 +104,10 @@ class PictureInitial(tk.Frame):
 
         :return: None
         """
-        if not gui_wait:
+
+        if not image_required:
             self.image_label.destroy()
-            self.picture.configure(file="image.png", format="png")
+            self.picture.configure(file="unzoomed.png", format="png")
             self.image_button.pack(side="left")
             self.image_button.bind("<Button-1>", self.click)
         else:
@@ -124,7 +130,6 @@ class PictureInitial(tk.Frame):
     def click(event):
         """
         Currently only prints the mouseclick
-        #TODO Implement ROS Publisher and tap to zoom
 
         :param event: Mouseclick on Image
         :return: None
@@ -149,7 +154,7 @@ class PictureZoomed(tk.Frame):
                                                                                                 pady=10)
         self.zoom_point = zoom_coordinate
 
-        self.cv_image = cv2.imread("image.png")
+        self.cv_image = cv2.imread("unzoomed.png")
         print("dimensions:{}".format(self.cv_image.shape))
         self.x_dim = self.cv_image.shape[1]
         self.y_dim = self.cv_image.shape[0]
@@ -231,7 +236,6 @@ class PictureZoomed(tk.Frame):
 class PictureSelected(tk.Frame):
     """
     This frame has the image with the selection dot layed over it
-    #TODO Implement selection Dot and zoom
     """
 
     def __init__(self, master):
@@ -292,7 +296,7 @@ class Success(tk.Frame):
         self.frame = 0
         self.picture = tk.PhotoImage(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
-        tk.Label(self, image=self.picture).pack(side="top")
+        tk.Label(self, image=self.picture).pack(side="left")
 
         self.button = tk.Button(self, text="Next Grasp", width=25, height=10,
                                 command=lambda: master.switch_frame(StartPage))
@@ -323,12 +327,13 @@ class Success(tk.Frame):
         elif (not gui_wait) and success:
             self.picture.configure(file="green_checkmark.png", format="png")
             self.label.configure(text="Success :)")
-            self.button.pack(side="bottom")
+            self.button.pack(side="right")
 
         elif (not gui_wait) and (not success):
-            self.picture.configure(file="red_x.png", format="png")
+            #self.picture.configure(file="red_x.png", format="png")
+            self.picture.configure(file="red_x_2.png", format="png")
             self.label.configure(text="Failure :(")
-            self.button.pack(side="bottom")
+            self.button.pack(side="right")
 
         else:
             self.wait_spin()
@@ -369,11 +374,33 @@ def success_cb(data):
     global success
     success = data.data
 
+def image_cb(data):
+    """
+    updates the image data that will be displayed. Uses the global variable image_required. When this is high it will
+    update the image and pull it low once again
+
+    :param data: sensor_msgs.msg Image
+    :return: None
+    """
+    global image_required
+    if image_required:
+        bridge = CvBridge()
+        try:
+            cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+
+            cv2.imwrite("unzoomed.png", cv_image)
+            image_required = False
+
+        except CvBridgeError as error:
+            print(error)
+
 
 if __name__ == "__main__":
     rospy.init_node("Listener", anonymous=True)
     rospy.Subscriber("gui_wait", Bool, gui_wait_cb)
     rospy.Subscriber("success", Bool, success_cb)
+    #TODO Update actual image topic name
+    rospy.Subscriber("image_raw", Image, image_cb)
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     app = SampleApp()
     # app.wm_geometry("600x600")

@@ -32,6 +32,7 @@ For Python 2.7
 For Python 3.8
 * pip3 install python3-tk    (Should be installed by default)
 * pip3 install opencv-python    (Should be installed by default)
+* sudo apt install python-imaging-tk
 
 To you want to build docs   (Docs only built on python3)
 * pip install -U python3-sphinx
