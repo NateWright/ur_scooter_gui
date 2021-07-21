@@ -330,8 +330,7 @@ class Success(tk.Frame):
             self.button.pack(side="right")
 
         elif (not gui_wait) and (not success):
-            #self.picture.configure(file="red_x.png", format="png")
-            self.picture.configure(file="red_x_2.png", format="png")
+            self.picture.configure(file="red_x.png", format="png")
             self.label.configure(text="Failure :(")
             self.button.pack(side="right")
 
