@@ -64,8 +64,6 @@ class StartPage(tk.Frame):
         :param event: Start Page Button Push
         :return: None
         """
-        global gui_wait
-        gui_wait = None
         global success
         success = None
         global image_required
@@ -74,8 +72,7 @@ class StartPage(tk.Frame):
 
 class PictureInitial(tk.Frame):
     """
-    This frame loads the initial unzoomed image taken from the camera, receives a user click, and then publishes over
-    ROS. /gui_wait must be pulled low by the system in order for the image to update and test_image.png must exist
+    This frame loads the initial unzoomed image taken from the camera, receives a user click, then zooms in on it.
     """
 
     def __init__(self, master):
@@ -92,8 +89,6 @@ class PictureInitial(tk.Frame):
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureZoomed))
 
-        global gui_wait
-        gui_wait = True
 
         master.after(update_rate, self.update())
 
@@ -181,14 +176,11 @@ class PictureZoomed(tk.Frame):
         self.cv_image = cv2.resize(self.cv_image, (self.x_dim, self.y_dim), interpolation=cv2.INTER_CUBIC)
         cv2.imwrite("image_zoomed.png", self.cv_image)
 
-
         self.picture = tk.PhotoImage(file="image_zoomed.png", format="png")
-        self.image_label = tk.Label(self, image=self.picture)
-        self.image_label.pack()
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureSelected))
-        global gui_wait
-        gui_wait = True
+        self.image_button.pack(side="top")
+        self.image_button.bind("<Button-1>", self.click)
 
         master.after(update_rate, self.update())
 
@@ -199,11 +191,7 @@ class PictureZoomed(tk.Frame):
 
         :return: None
         """
-        if not gui_wait:
-            self.image_label.destroy()
-            self.picture.configure(file="image_zoomed.png", format="png")
-            self.image_button.pack(side="left")
-            self.image_button.bind("<Button-1>", self.click)
+        self.picture.configure(file="image_zoomed.png", format="png")
         self.after(update_rate, self.update)
 
     def click(self, event):
@@ -255,9 +243,9 @@ class PictureSelected(tk.Frame):
         self.no_button = tk.Button(self, text="Wrong", width=25, height=13,
                                    command=lambda: master.switch_frame(PictureInitial))
 
-        global gui_wait
-        gui_wait = True
-        print("gui_wait value:{}".format(gui_wait))
+        self.yes_button.pack(side="top", anchor="ne")
+
+        self.no_button.pack(side="top", anchor="ne")
 
         master.after(update_rate, self.update())
 
@@ -267,13 +255,7 @@ class PictureSelected(tk.Frame):
 
         :return: None
         """
-        global gui_wait
-        if not gui_wait:
-            self.yes_button.pack(side="top", anchor="ne")
-            self.no_button.pack(side="top", anchor="ne")
-            self.picture.configure(file="image_zoomed.png", format="png")
-        elif gui_wait is None:
-            print("Error gui_wait is of type None")
+        self.picture.configure(file="image_zoomed.png", format="png")
         self.after(update_rate, self.update)
 
     @staticmethod
@@ -302,17 +284,12 @@ class Success(tk.Frame):
         self.button = tk.Button(self, text="Next Grasp", width=25, height=10,
                                 command=lambda: master.switch_frame(StartPage))
 
-        global gui_wait
-        gui_wait = True
-
-        print("gui_wait value:{}".format(gui_wait))
         print("success value:{}".format(success))
         master.after(update_rate, self.update())
 
     def update(self):
         """
-        Spins the laoding wheel unless the tester has both published a success message, and the system has pulled
-        gui_wait low
+        Spins the laoding wheel unless the tester has published whether it was a success or not
         #TODO Get better clip art
 
         :return: none
@@ -322,21 +299,15 @@ class Success(tk.Frame):
         if success is None:
             self.wait_spin()
 
-        elif gui_wait is None:
-            print("Error None value received for gui_wait")
-
-        elif (not gui_wait) and success:
+        elif success:
             self.picture.configure(file="green_checkmark.png", format="png")
             self.label.configure(text="Success :)")
             self.button.pack(side="right")
 
-        elif (not gui_wait) and (not success):
+        elif not success:
             self.picture.configure(file="red_x.png", format="png")
             self.label.configure(text="Failure :(")
             self.button.pack(side="right")
-
-        else:
-            self.wait_spin()
 
         self.after(update_rate, self.update)
 
@@ -351,17 +322,6 @@ class Success(tk.Frame):
             self.picture.configure(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
         else:
             self.frame = 0
-
-
-def gui_wait_cb(data):
-    """
-    updates the gui_wait flag from the /gui_wait topic
-
-    :param data: std_msgs.msg Bool
-    :return: None
-    """
-    global gui_wait
-    gui_wait = data.data
 
 
 def success_cb(data):
@@ -397,7 +357,6 @@ def image_cb(data):
 
 if __name__ == "__main__":
     rospy.init_node("Listener", anonymous=True)
-    rospy.Subscriber("gui_wait", Bool, gui_wait_cb)
     rospy.Subscriber("success", Bool, success_cb)
     #TODO Update actual image topic name
     rospy.Subscriber("image_raw", Image, image_cb)
