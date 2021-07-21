@@ -10,7 +10,6 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 
-gui_wait = None
 success = None
 image_required = False
 update_rate = 50  # In milliseconds
@@ -47,7 +46,7 @@ class StartPage(tk.Frame):
         tk.Frame.__init__(self, master)
         self.button = tk.Button(self, text="Begin", width=25, height=10,
                                 command=lambda: master.switch_frame(PictureInitial))
-        self.button.bind("<Button-1>", self.clear_globals)
+        self.button.bind("<Button-1>", self.setup_globals)
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
 
         master.after(update_rate, self.update())
@@ -57,9 +56,9 @@ class StartPage(tk.Frame):
         self.after(update_rate, self.update)
 
     @staticmethod
-    def clear_globals(event):
+    def setup_globals(event):
         """
-        resets the gui_wait and success variables to None. Sets the image_required variable high.
+        Read the name
 
         :param event: Start Page Button Push
         :return: None
@@ -251,7 +250,7 @@ class PictureSelected(tk.Frame):
 
     def update(self):
         """
-        Loads the screen until gui_wait is pulled low, then it populates the image and allows the user to confirm it.
+        Populates the image and allows the user to confirm it.
 
         :return: None
         """
@@ -294,7 +293,6 @@ class Success(tk.Frame):
 
         :return: none
         """
-        global gui_wait
 
         if success is None:
             self.wait_spin()
