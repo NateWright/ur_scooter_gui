@@ -276,7 +276,8 @@ class PictureSelected(tk.Frame):
             print("Error gui_wait is of type None")
         self.after(update_rate, self.update)
 
-    def publish_point(self, event):
+    @staticmethod
+    def publish_point(event):
         # X, Y format
         array = UInt32MultiArray()
         array.data = [circle_coordinate[0], circle_coordinate[1]]
