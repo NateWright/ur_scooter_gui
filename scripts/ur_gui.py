@@ -6,9 +6,11 @@ except ImportError:
 import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import UInt32MultiArray
+from std_msgs.msg import String
 from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
+import os
 
 success = None
 image_required = False
@@ -16,6 +18,7 @@ update_rate = 50  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
+directory = os.path.dirname(__file__)
 
 
 class SampleApp(tk.Tk):
@@ -47,6 +50,7 @@ class StartPage(tk.Frame):
         self.button = tk.Button(self, text="Begin", width=25, height=10,
                                 command=lambda: master.switch_frame(PictureInitial))
         self.button.bind("<Button-1>", self.setup_globals)
+        self.button.bind("<Button-1>", self.begin_button_pub, add="+")
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
 
         master.after(update_rate, self.update())
@@ -68,6 +72,10 @@ class StartPage(tk.Frame):
         global image_required
         image_required = True
 
+    @staticmethod
+    def begin_button_pub(event):
+        log_pub.publish("begin, image_unzoomed, begin_button")
+
 
 class PictureInitial(tk.Frame):
     """
@@ -81,13 +89,12 @@ class PictureInitial(tk.Frame):
 
         self.label = tk.Label(self, text="Please click the object on the touchscreen").pack(side="top", fill="x",
                                                                                             pady=10)
-
-        self.picture = tk.PhotoImage(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+        wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
+        self.picture = tk.PhotoImage(file=wheel_filename, format="gif -index {}".format(self.frame))
         self.image_label = tk.Label(self, image=self.picture)
         self.image_label.pack()
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureZoomed))
-
 
         master.after(update_rate, self.update())
 
@@ -101,9 +108,11 @@ class PictureInitial(tk.Frame):
 
         if not image_required:
             self.image_label.destroy()
-            self.picture.configure(file="unzoomed.png", format="png")
+            image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
+            self.picture.configure(file=image_unzoomed, format="png")
             self.image_button.pack(side="left")
             self.image_button.bind("<Button-1>", self.click)
+            self.image_button.bind("<Button-1>", self.select_unzoomed_button_pub, add="+")
         else:
             self.wait_spin()
         self.after(update_rate, self.update)
@@ -116,7 +125,8 @@ class PictureInitial(tk.Frame):
         """
         if self.frame < 16:
             self.frame = self.frame + 1
-            self.picture.configure(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+            wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
+            self.picture.configure(file=wheel_filename, format="gif -index {}".format(self.frame))
         else:
             self.frame = 0
 
@@ -128,11 +138,12 @@ class PictureInitial(tk.Frame):
         :param event: Mouseclick on Image
         :return: None
         """
-        print("Event done")
-        print("Mouse position: {} {}".format(event.x, event.y))
         global zoom_coordinate
         zoom_coordinate = (event.x, event.y)
-        return
+
+    @staticmethod
+    def select_unzoomed_button_pub(event):
+        log_pub.publish("image_unzoomed, image_zoomed, image_button")
 
 
 class PictureZoomed(tk.Frame):
@@ -149,10 +160,8 @@ class PictureZoomed(tk.Frame):
         self.zoom_point = zoom_coordinate
 
         self.cv_image = cv2.imread("unzoomed.png")
-        print("dimensions:{}".format(self.cv_image.shape))
         self.x_dim = self.cv_image.shape[1]
         self.y_dim = self.cv_image.shape[0]
-        print("x:{} y:{}".format(self.x_dim, self.y_dim))
 
         self.x_limits = int(round(self.x_dim / 4))
         self.y_limits = int(round(self.y_dim / 4))
@@ -173,13 +182,15 @@ class PictureZoomed(tk.Frame):
         self.cv_image = self.cv_image[self.y_region[0]:self.y_region[1], self.x_region[0]:self.x_region[1], :]
 
         self.cv_image = cv2.resize(self.cv_image, (self.x_dim, self.y_dim), interpolation=cv2.INTER_CUBIC)
-        cv2.imwrite("image_zoomed.png", self.cv_image)
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        cv2.imwrite(image_zoom_filename, self.cv_image)
 
-        self.picture = tk.PhotoImage(file="image_zoomed.png", format="png")
+        self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureSelected))
         self.image_button.pack(side="top")
         self.image_button.bind("<Button-1>", self.click)
+        self.image_button.bind("<Button-1>", self.zoomed_select_button_pub, add="+")
 
         master.after(update_rate, self.update())
 
@@ -190,7 +201,8 @@ class PictureZoomed(tk.Frame):
 
         :return: None
         """
-        self.picture.configure(file="image_zoomed.png", format="png")
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        self.picture.configure(file=image_zoom_filename, format="png")
         self.after(update_rate, self.update)
 
     def click(self, event):
@@ -201,9 +213,10 @@ class PictureZoomed(tk.Frame):
         :return: None
         """
         print("Mouse position: {} {}".format(event.x, event.y))
-        self.cv_image = cv2.imread("image_zoomed.png")
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        self.cv_image = cv2.imread(image_zoom_filename)
         self.cv_image = cv2.circle(self.cv_image, (event.x, event.y), 10, (0, 255, 0), -1)
-        cv2.imwrite("image_zoomed.png", self.cv_image)
+        cv2.imwrite(image_zoom_filename, self.cv_image)
         real_x = int(round(zoom_coordinate[0] - (self.x_limits / 2) + event.x / float(self.x_dim) * self.x_limits))
         real_y = int(round(zoom_coordinate[1] - (self.y_limits / 2) + event.y / float(self.y_dim) * self.y_limits))
         if real_x < 0:
@@ -219,10 +232,14 @@ class PictureZoomed(tk.Frame):
         global circle_coordinate
         circle_coordinate = (real_x, real_y)
 
+    @staticmethod
+    def zoomed_select_button_pub(event):
+        log_pub.publish("image_zoomed, image_selected, zoomed_image_button")
+
 
 class PictureSelected(tk.Frame):
     """
-    This frame has the image with the selection dot layed over it
+    This frame has the image with the selection dot laid over it
     """
 
     def __init__(self, master):
@@ -230,7 +247,8 @@ class PictureSelected(tk.Frame):
 
         tk.Label(self, text="Please confirm whether this is the correct object").pack()
 
-        self.picture = tk.PhotoImage(file="image_zoomed.png", format="png")
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
 
@@ -238,9 +256,12 @@ class PictureSelected(tk.Frame):
                                     command=lambda: master.switch_frame(Success))
 
         self.yes_button.bind("<Button-1>", self.publish_point)
+        self.yes_button.bind("<Button-1>", self.selected_correct_button_pub, add="+")
 
         self.no_button = tk.Button(self, text="Wrong", width=25, height=13,
                                    command=lambda: master.switch_frame(PictureInitial))
+
+        self.no_button.bind("<Button-1>", self.selected_incorrect_button_pub)
 
         self.yes_button.pack(side="top", anchor="ne")
 
@@ -254,7 +275,9 @@ class PictureSelected(tk.Frame):
 
         :return: None
         """
-        self.picture.configure(file="image_zoomed.png", format="png")
+
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        self.picture.configure(file=image_zoom_filename, format="png")
         self.after(update_rate, self.update)
 
     @staticmethod
@@ -263,6 +286,14 @@ class PictureSelected(tk.Frame):
         array = UInt32MultiArray()
         array.data = [circle_coordinate[0], circle_coordinate[1]]
         point_pub.publish(array)
+
+    @staticmethod
+    def selected_correct_button_pub(event):
+        log_pub.publish("image_selected, grasping, selected_correct_button")
+
+    @staticmethod
+    def selected_incorrect_button_pub(event):
+        log_pub.publish("image_selected, image_unzoomed, selected_incorrect_button")
 
 
 class Success(tk.Frame):
@@ -276,14 +307,14 @@ class Success(tk.Frame):
         self.label.pack()
 
         self.frame = 0
-        self.picture = tk.PhotoImage(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+        loading_wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
+        self.picture = tk.PhotoImage(file=loading_wheel_filename, format="gif -index {}".format(self.frame))
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
 
         self.button = tk.Button(self, text="Next Grasp", width=25, height=10,
                                 command=lambda: master.switch_frame(StartPage))
 
-        print("success value:{}".format(success))
         master.after(update_rate, self.update())
 
     def update(self):
@@ -298,12 +329,14 @@ class Success(tk.Frame):
             self.wait_spin()
 
         elif success:
-            self.picture.configure(file="green_checkmark.png", format="png")
+            green_checkmark_filename = os.path.join(directory, "../assets/green_checkmark.png")
+            self.picture.configure(file=green_checkmark_filename, format="png")
             self.label.configure(text="Success :)")
             self.button.pack(side="right")
 
         elif not success:
-            self.picture.configure(file="red_x.png", format="png")
+            red_x_filename = os.path.join(directory, "../assets/red_x.png")
+            self.picture.configure(file=red_x_filename, format="png")
             self.label.configure(text="Failure :(")
             self.button.pack(side="right")
 
@@ -315,11 +348,18 @@ class Success(tk.Frame):
 
         :return: None
         """
+
         if self.frame < 16:
             self.frame = self.frame + 1
-            self.picture.configure(file="loading_wheel.gif", format="gif -index {}".format(self.frame))
+            loading_wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
+            self.picture.configure(file=loading_wheel_filename, format="gif -index {}".format(self.frame))
         else:
             self.frame = 0
+
+    @staticmethod
+    def next_grasp_button_pub(event):
+        # TODO Determine if we want just the success state or the individual result with team
+        log_pub.publish("success, begin, next_grasp_button")
 
 
 def success_cb(data):
@@ -346,7 +386,9 @@ def image_cb(data):
         try:
             cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
 
-            cv2.imwrite("unzoomed.png", cv_image)
+
+            image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
+            cv2.imwrite(image_unzoomed, cv_image)
             image_required = False
 
         except CvBridgeError as error:
@@ -359,6 +401,7 @@ if __name__ == "__main__":
     #TODO Update actual image topic name
     rospy.Subscriber("image_raw", Image, image_cb)
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
+    log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
     app = SampleApp()
     # app.wm_geometry("600x600")
     app.mainloop()

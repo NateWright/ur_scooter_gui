@@ -3,12 +3,16 @@ import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import cv2
+import os
 
 
 def test_pub():
     rospy.init_node("camera_pub", anonymous=True)
 
-    cv_image = cv2.imread("test_image.png")
+    dirname = os.path.dirname(__file__)
+    filename = os.path.join(dirname, "../assets/test_image.png")
+
+    cv_image = cv2.imread(filename)
 
     bridge = CvBridge()
     image_message = bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")
