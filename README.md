@@ -5,11 +5,6 @@ Relies on TKinter and ROS. Designed for ROS Kinetic (partial testing done on Noe
 **ROS Topics**  
 
 **Subscribers**  
-**/gui_wait**  
-This will be pulled high by this program. Once the system is ready to move to the next state you must pull the topic
-low.  
-(Example: Once image of environment is ready, open the image. Once system finishes grasp pull it low, etc.)
-
 **/success**  
 This is published by the researched performing the subject. Determine whether the trial was a success or failure.
 
@@ -18,11 +13,17 @@ This is published by the researched performing the subject. Determine whether th
 Publishes a UInt32MultiArray with X at position zero and Y at position 1. This is the point the user clicked relative to
 the original image
 
+**/logging_topic**
+Publishes a simple string containing the current state, next state, and button pressed to cause the transition
+
 # Running Code
 * git clone https://github.com/PatrickCPE/ur_scooter_gui.git ~/catkin_ws/src/
 * cd ~/catkin_ws
 * catkin build
-* rosrun ur_scooter_gui ur_gui.py
+* roslaunch ur_scooter_gui ur_scooter_gui.launch testing:=false
+
+Set testing to true if you are not publishing the real image and success status. Testing also alternates the status of /success to
+simulate the different scenarios.
 
 # Requirements
 For Python 2.7
