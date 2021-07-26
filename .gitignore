@@ -3,3 +3,6 @@ docs/_build/
 venv
 scripts/image_zoomed.png
 scripts/unzoomed.png
+assets/image_zoomed.png
+assets/unzoomed.png
+scripts/__pycache__/
