@@ -199,9 +199,16 @@ class PictureZoomed(tk.Frame):
         self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureSelected))
-        self.image_button.pack(side="top")
+        self.image_button.pack(side="left", anchor="nw")
         self.image_button.bind("<Button-1>", self.click)
         self.image_button.bind("<Button-1>", self.zoomed_select_button_pub, add="+")
+
+        button_height = int(13 * scale_factor)
+        button_width = int(25 * scale_factor)
+        self.back_button = tk.Button(self, text="Back", width=button_width, height=button_height,
+                                     command=lambda: master.switch_frame(PictureInitial))
+        self.back_button.pack(side="top", anchor="ne", fill="both", padx=5, pady=int(100 * scale_factor))
+        self.back_button.bind("<Button-1>", self.zoomed_back_button_pub)
 
         master.after(update_rate, self.update())
 
@@ -247,6 +254,11 @@ class PictureZoomed(tk.Frame):
         log_pub.publish("image_zoomed, image_selected, zoomed_image_button")
 
 
+    @staticmethod
+    def zoomed_back_button_pub(event):
+        log_pub.publish("image_zoomed, image_unzoomed, zoomed_back_button")
+
+
 class PictureSelected(tk.Frame):
     """
     This frame has the image with the selection dot laid over it
@@ -274,9 +286,9 @@ class PictureSelected(tk.Frame):
 
         self.no_button.bind("<Button-1>", self.selected_incorrect_button_pub)
 
-        self.yes_button.pack(side="top", anchor="ne")
+        self.yes_button.pack(side="top", anchor="ne", padx=5)
 
-        self.no_button.pack(side="top", anchor="ne")
+        self.no_button.pack(side="top", anchor="ne", padx=5)
 
         master.after(update_rate, self.update())
 
