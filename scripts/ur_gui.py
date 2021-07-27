@@ -26,6 +26,10 @@ image = None
 directory = os.path.dirname(__file__)
 
 
+# TODO Font Adjusting
+# TODO Box Size Adjusting
+# TODO Image Scaling of sample point down
+
 class SampleApp(tk.Tk):
     """
     Main TK Instance - Controls the page frame of the system
@@ -326,10 +330,8 @@ class Success(tk.Frame):
 
     def update(self):
         """
-        Spins the laoding wheel unless the tester has published whether it was a success or not
+        Spins the loading wheel unless the tester has published whether it was a success or not
         #TODO Get better clip art
-
-        :return: none
         """
 
         if success is None:
@@ -379,6 +381,7 @@ def success_cb(data):
     global success
     success = data.data
 
+
 def image_cb(data):
     """
     updates the image data that will be displayed. Uses the global variable image_required. When this is high it will
@@ -393,7 +396,6 @@ def image_cb(data):
         try:
             cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
 
-
             image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
             cv2.imwrite(image_unzoomed, cv_image)
             image_required = False
@@ -403,7 +405,7 @@ def image_cb(data):
 
 
 if __name__ == "__main__":
-    rospy.init_node("Listener", anonymous=True)
+    rospy.init_node("GUI", anonymous=True)
     rospy.Subscriber("success", Bool, success_cb)
     # TODO Update actual image topic name
     rospy.Subscriber("image_raw", Image, image_cb)
