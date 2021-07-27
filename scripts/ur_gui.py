@@ -23,12 +23,11 @@ update_rate = 50  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
+scale_factor = 1.5  # Scale factor for all assets relative to the native 640x480 image
 directory = os.path.dirname(__file__)
 
 
 # TODO Font Adjusting
-# TODO Box Size Adjusting
-# TODO Image Scaling of sample point down
 
 class SampleApp(tk.Tk):
     """
@@ -56,7 +55,7 @@ class StartPage(tk.Frame):
 
     def __init__(self, master):
         tk.Frame.__init__(self, master)
-        self.button = tk.Button(self, text="Begin", width=25, height=10,
+        self.button = tk.Button(self, text="Begin", width=75, height=30,
                                 command=lambda: master.switch_frame(PictureInitial))
         self.button.bind("<Button-1>", self.setup_globals)
         self.button.bind("<Button-1>", self.begin_button_pub, add="+")
@@ -262,14 +261,15 @@ class PictureSelected(tk.Frame):
         self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
-
-        self.yes_button = tk.Button(self, text="Correct", width=25, height=13,
+        button_height = int(13 * scale_factor)
+        button_width = int(25 * scale_factor)
+        self.yes_button = tk.Button(self, text="Correct", width=button_width, height=button_height,
                                     command=lambda: master.switch_frame(Success))
 
         self.yes_button.bind("<Button-1>", self.publish_point)
         self.yes_button.bind("<Button-1>", self.selected_correct_button_pub, add="+")
 
-        self.no_button = tk.Button(self, text="Wrong", width=25, height=13,
+        self.no_button = tk.Button(self, text="Wrong", width=button_width, height=button_height,
                                    command=lambda: master.switch_frame(PictureInitial))
 
         self.no_button.bind("<Button-1>", self.selected_incorrect_button_pub)
@@ -295,7 +295,13 @@ class PictureSelected(tk.Frame):
     def publish_point(event):
         # X, Y format
         array = UInt32MultiArray()
-        array.data = [circle_coordinate[0], circle_coordinate[1]]
+
+        unzoomed_filename = os.path.join(directory, "../assets/unzoomed.png")
+        cv_image = cv2.imread(unzoomed_filename)
+        x_dim = cv_image.shape[1]
+        downscale_factor = x_dim / 640  # Yields the factor we need to divide circle_coordinates by
+
+        array.data = [int(circle_coordinate[0] / downscale_factor), int(circle_coordinate[1] / downscale_factor)]
         point_pub.publish(array)
 
     @staticmethod
@@ -323,7 +329,7 @@ class Success(tk.Frame):
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
 
-        self.button = tk.Button(self, text="Next Grasp", width=25, height=10,
+        self.button = tk.Button(self, text="Next Grasp", width=50, height=20,
                                 command=lambda: master.switch_frame(StartPage))
 
         master.after(update_rate, self.update())
@@ -331,7 +337,6 @@ class Success(tk.Frame):
     def update(self):
         """
         Spins the loading wheel unless the tester has published whether it was a success or not
-        #TODO Get better clip art
         """
 
         if success is None:
@@ -395,6 +400,10 @@ def image_cb(data):
         bridge = CvBridge()
         try:
             cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
+            # Hard coded to match depth sensor resolution
+            x_dim = int(640 * scale_factor)
+            y_dim = int(480 * scale_factor)
+            cv_image = cv2.resize(cv_image, (x_dim, y_dim), interpolation=cv2.INTER_CUBIC)
 
             image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
             cv2.imwrite(image_unzoomed, cv_image)
@@ -412,6 +421,4 @@ if __name__ == "__main__":
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
     app = SampleApp()
-    # TODO Window Geometry Setup
-    # app.wm_geometry("600x600")
     app.mainloop()
