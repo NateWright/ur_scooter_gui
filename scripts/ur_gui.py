@@ -273,7 +273,7 @@ class PictureSelected(tk.Frame):
         self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
-        button_height = int(13 * scale_factor)
+        button_height = int(17 * scale_factor)
         button_width = int(25 * scale_factor)
         self.yes_button = tk.Button(self, text="Correct", width=button_width, height=button_height,
                                     command=lambda: master.switch_frame(Success))
