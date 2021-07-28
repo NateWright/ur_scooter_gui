@@ -16,6 +16,7 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import os
+import tkFont
 
 success = None
 image_required = False
@@ -25,6 +26,8 @@ circle_coordinate = None
 image = None
 scale_factor = 1.5  # Scale factor for all assets relative to the native 640x480 image
 directory = os.path.dirname(__file__)
+large_font = ("Helvetica", 72, "bold")
+small_font = ("Helvetica", 36)
 
 
 # TODO Font Adjusting
@@ -38,6 +41,8 @@ class SampleApp(tk.Tk):
         tk.Tk.__init__(self)
         self._frame = None
         self.switch_frame(StartPage)
+        # TK instance must be running for font to exist
+        font = tkFont.Font(family="Times", size=36)
 
     def switch_frame(self, frame_class):
         """Destroys current frame and replaces it with a new one."""
@@ -55,8 +60,8 @@ class StartPage(tk.Frame):
 
     def __init__(self, master):
         tk.Frame.__init__(self, master)
-        self.button = tk.Button(self, text="Begin", width=75, height=30,
-                                command=lambda: master.switch_frame(PictureInitial))
+        self.button = tk.Button(self, text="Begin", width=75, height=30, font=large_font,
+                                activebackground="lime", bg="lime", command=lambda: master.switch_frame(PictureInitial))
         self.button.bind("<Button-1>", self.setup_globals)
         self.button.bind("<Button-1>", self.begin_button_pub, add="+")
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
@@ -95,8 +100,9 @@ class PictureInitial(tk.Frame):
 
         self.frame = 0
 
-        self.label = tk.Label(self, text="Please click the object on the touchscreen").pack(side="top", fill="x",
-                                                                                            pady=10)
+        self.label = tk.Label(self, text="Please click the object on the touchscreen",
+                              font=small_font).pack(side="top", fill="x",
+                                                    pady=10)
         wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
         self.picture = tk.PhotoImage(file=wheel_filename, format="gif -index {}".format(self.frame))
         self.image_label = tk.Label(self, image=self.picture)
@@ -163,8 +169,10 @@ class PictureZoomed(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
 
-        self.label = tk.Label(self, text="Please click the object on the zoomed in image").pack(side="top", fill="x",
-                                                                                                pady=10)
+        self.label = tk.Label(self, text="Please click the object on the zoomed in image", font=small_font).pack(
+            side="top", fill="x",
+            pady=10)
+
         self.zoom_point = zoom_coordinate
 
         unzoomed_filename = os.path.join(directory, "../assets/unzoomed.png")
@@ -203,9 +211,10 @@ class PictureZoomed(tk.Frame):
         self.image_button.bind("<Button-1>", self.click)
         self.image_button.bind("<Button-1>", self.zoomed_select_button_pub, add="+")
 
-        button_height = int(13 * scale_factor)
-        button_width = int(25 * scale_factor)
-        self.back_button = tk.Button(self, text="Back", width=button_width, height=button_height,
+        button_height = 3
+        button_width = 8
+        self.back_button = tk.Button(self, text="Back", width=button_width, height=button_height, font=large_font,
+                                     activebackground="red", bg="red",
                                      command=lambda: master.switch_frame(PictureInitial))
         self.back_button.pack(side="top", anchor="ne", fill="both", padx=5, pady=int(100 * scale_factor))
         self.back_button.bind("<Button-1>", self.zoomed_back_button_pub)
@@ -253,7 +262,6 @@ class PictureZoomed(tk.Frame):
     def zoomed_select_button_pub(event):
         log_pub.publish("image_zoomed, image_selected, zoomed_image_button")
 
-
     @staticmethod
     def zoomed_back_button_pub(event):
         log_pub.publish("image_zoomed, image_unzoomed, zoomed_back_button")
@@ -267,21 +275,22 @@ class PictureSelected(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
 
-        tk.Label(self, text="Please confirm whether this is the correct object").pack()
+        tk.Label(self, text="Please confirm whether this is the correct object", font=small_font).pack()
 
         image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
         self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
-        button_height = int(17 * scale_factor)
-        button_width = int(25 * scale_factor)
-        self.yes_button = tk.Button(self, text="Correct", width=button_width, height=button_height,
-                                    command=lambda: master.switch_frame(Success))
+        button_height = 3
+        button_width = 8
+        self.yes_button = tk.Button(self, text="Correct", width=button_width, height=button_height, font=large_font,
+                                    activebackground="lime", bg="lime", command=lambda: master.switch_frame(Success))
 
         self.yes_button.bind("<Button-1>", self.publish_point)
         self.yes_button.bind("<Button-1>", self.selected_correct_button_pub, add="+")
 
-        self.no_button = tk.Button(self, text="Wrong", width=button_width, height=button_height,
+        self.no_button = tk.Button(self, text="Wrong", width=button_width, height=button_height, font=large_font,
+                                   activebackground="red", bg="red",
                                    command=lambda: master.switch_frame(PictureInitial))
 
         self.no_button.bind("<Button-1>", self.selected_incorrect_button_pub)
@@ -332,7 +341,7 @@ class Success(tk.Frame):
 
     def __init__(self, master):
         tk.Frame.__init__(self, master)
-        self.label = tk.Label(self, text="Please wait, determining if this was a successful selection")
+        self.label = tk.Label(self, text="Please wait, determining if this was a successful selection", font=small_font)
         self.label.pack()
 
         self.frame = 0
@@ -341,7 +350,7 @@ class Success(tk.Frame):
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
 
-        self.button = tk.Button(self, text="Next Grasp", width=50, height=20,
+        self.button = tk.Button(self, text="Next Grasp", width=12, height=4, font=large_font,
                                 command=lambda: master.switch_frame(StartPage))
 
         master.after(update_rate, self.update())
@@ -357,13 +366,15 @@ class Success(tk.Frame):
         elif success:
             green_checkmark_filename = os.path.join(directory, "../assets/green_checkmark.png")
             self.picture.configure(file=green_checkmark_filename, format="png")
-            self.label.configure(text="Success :)")
+            self.label.configure(text="Success :)", font=small_font)
+            self.button.configure(activebackground="lime", bg="lime")
             self.button.pack(side="right")
 
         elif not success:
             red_x_filename = os.path.join(directory, "../assets/red_x.png")
             self.picture.configure(file=red_x_filename, format="png")
-            self.label.configure(text="Failure :(")
+            self.label.configure(text="Failure :(", font=small_font)
+            self.button.configure(activebackground="red", bg="red")
             self.button.pack(side="right")
 
         self.after(update_rate, self.update)
