@@ -26,7 +26,7 @@ circle_coordinate = None
 image = None
 scale_factor = 1.5  # Scale factor for all assets relative to the native 640x480 image
 directory = os.path.dirname(__file__)
-large_font = ("Helvetica", 72, "bold")
+large_font = ("Helvetica", 60, "bold")
 small_font = ("Helvetica", 36)
 
 
