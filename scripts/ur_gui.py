@@ -16,7 +16,6 @@ from sensor_msgs.msg import Image
 import cv2
 from cv_bridge import CvBridge, CvBridgeError
 import os
-import tkFont
 
 success = None
 image_required = False
@@ -41,8 +40,6 @@ class SampleApp(tk.Tk):
         tk.Tk.__init__(self)
         self._frame = None
         self.switch_frame(StartPage)
-        # TK instance must be running for font to exist
-        font = tkFont.Font(family="Times", size=36)
 
     def switch_frame(self, frame_class):
         """Destroys current frame and replaces it with a new one."""
