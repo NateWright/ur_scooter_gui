@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This next one for python2
 # #!/usr/bin/env python2
@@ -85,6 +85,8 @@ class StartPage(tk.Frame):
     @staticmethod
     def begin_button_pub(event):
         log_pub.publish("begin, image_unzoomed, begin_button")
+        desired_state_pub.publish("gather_pick_cloud")
+
 
 
 class PictureInitial(tk.Frame):
@@ -325,6 +327,7 @@ class PictureSelected(tk.Frame):
     @staticmethod
     def selected_correct_button_pub(event):
         log_pub.publish("image_selected, grasping, selected_correct_button")
+        desired_state_pub.publish("pick_object")
 
     @staticmethod
     def selected_incorrect_button_pub(event):
@@ -440,5 +443,6 @@ if __name__ == "__main__":
     rospy.Subscriber("image_raw", Image, image_cb)
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
+    desired_state_pub = rospy.Publisher("desired_state", String, latch=True, queue_size=10)
     app = SampleApp()
     app.mainloop()

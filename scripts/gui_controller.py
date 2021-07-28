@@ -1,7 +1,7 @@
-#!/usr/bin/env/ python
+#!/usr/bin/env python3
 
 # Use this one for python2
-# #!/usr/bin/env/ python2
+###asdasd!/usr/bin/env python2
 
 import rospy
 from std_msgs.msg import String
@@ -33,8 +33,9 @@ class GuiController:
         self.center = None
 
         # TODO Delete this because this relies on Sasha's code
+        # This is the point from the gui image
         self.point = None   # Causes infinite loop in object_select
-        self.point = True   # Allows you to leave object_select
+        # self.point = True   # Allows you to leave object_select
 
     def state_sub_cb(self, data):
         """
@@ -50,7 +51,7 @@ class GuiController:
 
         :param data: std_msgs.msg UInt32MultiArray
         """
-        self.desired_state = data.data
+        self.point = data.data
         print("Image Pixel Selected: X={} Y={}".format(data.data[0], data.data[1]))
 
     def run_current_state(self):
@@ -104,6 +105,7 @@ class GuiController:
     def object_select(self):
         if self.point is not None:
             # TODO Implement the segmentation code based on the point
+            print("This is where you should run your code to segment the object and set self.center")
             self.prev_state = self.state
             self.state = "segment_object"
             # TODO Make sure we can publish self.center
@@ -144,8 +146,7 @@ class GuiController:
         """
         System segments all reachable grasps within the points given to it. Automatically determines what the grasp that
         will be utilized and performs it. If grasp succeeds proceeds to basket, else if grasp fails it will return to
-        drive. Grasp success is determined based on the gripper position
-        # TODO Ask if it's based on gripper position or if it's based on gripper current
+        drive. Grasp success is determined based on the gripper feedback
         """
         grasps = self.scooter.get_reachable_grasps(self.sample_points)
         grasp = self.scooter.automatic_grasp_selection(grasps, self.sample_points, self.center)

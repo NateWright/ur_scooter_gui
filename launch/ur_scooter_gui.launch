@@ -1,10 +1,15 @@
 <launch>
     <arg name="testing" default="false" />
+    <arg name="controller" default="false" />
 
     <node pkg="ur_scooter_gui" name="ur_scooter_gui" type="ur_gui.py" />
 
     <group if="$(eval arg('testing') ==true)">
         <node pkg="ur_scooter_gui" name="gui_test_image_pub" type="cv_test_pub.py" />
         <node pkg="ur_scooter_gui" name="gui_test_success_pub" type="debug_success_publisher.py" />
+    </group>
+
+    <group if="$(eval arg('controller') ==true)">
+        <node pkg="ur_scooter_gui" name="gui_controller" type="gui_controller.py" output="screen" />
     </group>
 </launch>
