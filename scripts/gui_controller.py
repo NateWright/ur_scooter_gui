@@ -7,10 +7,11 @@ import rospy
 from std_msgs.msg import String
 from std_msgs.msg import UInt32MultiArray
 
-try:
-    from simple_ui import Scooter
-except ImportError:
-    from mock_scooter import Scooter
+#try:
+# TODO reimplement this
+from simple_ui import Scooter
+# except ImportError:
+    # from mock_scooter import Scooter
 
 
 class GuiController:
