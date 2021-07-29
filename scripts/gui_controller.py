@@ -95,7 +95,9 @@ class GuiController:
         if self.scooter.skip_grasp and self.scooter.has_saved_pointcloud():
             self.scooter.publish_saved_pointcloud()
         else:
-            self.scooter.update_pointcloud()
+            # TODO Modified update_point_cloud to handle Sasha code
+            # self.scooter.update_pointcloud()  # Removed for the 2D point version below
+            self.scooter.update_pointcloud_2d_selection()
             self.scooter.save_pointcloud()
 
         self.prev_state = self.state
@@ -104,12 +106,11 @@ class GuiController:
     # TODO This is the function that will need to integrate with Sasha's stuff
     def object_select(self):
         if self.point is not None:
-            # TODO Implement the segmentation code based on the point
             print("This is where you should run your code to segment the object and set self.center")
             self.prev_state = self.state
             self.state = "segment_object"
-            # TODO Make sure we can publish self.center
-            # self.center = whateeeeevvvvaaaaa
+            # TODO Determine if this is meant to go up to 640 or 639
+            self.center = self.scooter.center_from_2d_selection(self.point)
             # TODO Implement Image back propagation from point cloud so we can ask user if this is the correct object
 
     def segment_object(self):

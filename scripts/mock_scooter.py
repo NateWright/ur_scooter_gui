@@ -54,9 +54,18 @@ class Scooter:
     def update_pointcloud():
         print("Updating Pointcloud, Using Sensors and Stuff and Thangs")
 
+    @staticmethod
+    def update_pointcloud_2d_selection():
+        print("Updating 2D Selection Pointcloud, Using Sensors and Stuff and Thangs")
+
     def save_pointcloud(self):
         print("Saving Pointcloud")
         self.pointcloud = True
+
+    @staticmethod
+    def center_from_2d_selection(point):
+        print("Center at:{}".format(point))
+        return point
 
     def get_sample_points(self, center):
         print("Getting sample points")
