@@ -440,7 +440,7 @@ if __name__ == "__main__":
     rospy.init_node("GUI", anonymous=True)
     rospy.Subscriber("success", Bool, success_cb)
     # TODO Update actual image topic name
-    rospy.Subscriber("image_raw", Image, image_cb)
+    rospy.Subscriber("/rgb_right/image_rect_color", Image, image_cb)
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
     desired_state_pub = rospy.Publisher("desired_state", String, latch=True, queue_size=10)
