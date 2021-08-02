@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 #This next one for python2
 #!/usr/bin/env python2
@@ -22,7 +22,7 @@ def test_pub():
     bridge = CvBridge()
     image_message = bridge.cv2_to_imgmsg(cv_image, encoding="bgr8")
 
-    camera_pub = rospy.Publisher('image_raw', Image, queue_size=10)
+    camera_pub = rospy.Publisher('/rgb_right/image_rect_color', Image, queue_size=10)
     rate = rospy.Rate(60)
 
     while not rospy.is_shutdown():
