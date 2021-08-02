@@ -19,7 +19,8 @@ import os
 
 success = None
 image_required = False
-update_rate = 50  # In milliseconds
+# 8 Hz
+update_rate = 250  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
@@ -63,12 +64,6 @@ class StartPage(tk.Frame):
         self.button.bind("<Button-1>", self.begin_button_pub, add="+")
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
 
-        master.after(update_rate, self.update())
-
-    def update(self):
-        """No necessary updates in this frame"""
-        self.after(update_rate, self.update)
-
     @staticmethod
     def setup_globals(event):
         """
@@ -86,7 +81,6 @@ class StartPage(tk.Frame):
     def begin_button_pub(event):
         log_pub.publish("begin, image_unzoomed, begin_button")
         desired_state_pub.publish("gather_pick_cloud")
-
 
 
 class PictureInitial(tk.Frame):
@@ -128,6 +122,7 @@ class PictureInitial(tk.Frame):
             self.image_button.bind("<Button-1>", self.select_unzoomed_button_pub, add="+")
         else:
             self.wait_spin()
+            # TODO Remove testing here
         self.after(update_rate, self.update)
 
     def wait_spin(self):
@@ -348,7 +343,9 @@ class Success(tk.Frame):
         loading_wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
         self.picture = tk.PhotoImage(file=loading_wheel_filename, format="gif -index {}".format(self.frame))
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
-        tk.Label(self, image=self.picture).pack(side="left")
+        # TODO Find a way to switch pack location in the update statement
+        # TODO Currently it spins the loading wheel on left side which is ugly lol
+        self.picture_label = tk.Label(self, image=self.picture).pack(side="left")
 
         self.button = tk.Button(self, text="Next Grasp", width=12, height=4, font=large_font,
                                 command=lambda: master.switch_frame(StartPage))
@@ -445,4 +442,11 @@ if __name__ == "__main__":
     log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
     desired_state_pub = rospy.Publisher("desired_state", String, latch=True, queue_size=10)
     app = SampleApp()
+    # TODO Swap mainloop out for lower refresh rate
     app.mainloop()
+    """
+    while not rospy.is_shutdown():
+        app.update_idletasks()
+        app.update()
+        rospy.Rate(30).sleep()
+"""
