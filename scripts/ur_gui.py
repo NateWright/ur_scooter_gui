@@ -20,7 +20,7 @@ import os
 success = None
 image_required = False
 # 8 Hz
-update_rate = 333  # In milliseconds
+update_rate = 500  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
