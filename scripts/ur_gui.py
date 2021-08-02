@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This next one for python2
 # #!/usr/bin/env python2
@@ -20,7 +20,7 @@ import os
 success = None
 image_required = False
 # 8 Hz
-update_rate = 250  # In milliseconds
+update_rate = 333  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
@@ -29,8 +29,6 @@ directory = os.path.dirname(__file__)
 large_font = ("Helvetica", 60, "bold")
 small_font = ("Helvetica", 36)
 
-
-# TODO Font Adjusting
 
 class SampleApp(tk.Tk):
     """
@@ -91,52 +89,18 @@ class PictureInitial(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
 
-        self.frame = 0
-
         self.label = tk.Label(self, text="Please click the object on the touchscreen",
                               font=small_font).pack(side="top", fill="x",
                                                     pady=10)
-        wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
-        self.picture = tk.PhotoImage(file=wheel_filename, format="gif -index {}".format(self.frame))
-        self.image_label = tk.Label(self, image=self.picture)
-        self.image_label.pack()
+
+        image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
+        self.picture = tk.PhotoImage(file=image_unzoomed, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         self.image_button = tk.Button(self, image=self.picture, command=lambda: master.switch_frame(PictureZoomed))
 
-        master.after(update_rate, self.update())
-
-    def update(self):
-        """
-        Deletes the loading wheel once system is ready, updates image and loads it. Then  it binds image to callback.
-        Just spins wheel if system is waiting
-
-        :return: None
-        """
-
-        if not image_required:
-            self.image_label.destroy()
-            image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
-            self.picture.configure(file=image_unzoomed, format="png")
-            self.image_button.pack(side="left")
-            self.image_button.bind("<Button-1>", self.click)
-            self.image_button.bind("<Button-1>", self.select_unzoomed_button_pub, add="+")
-        else:
-            self.wait_spin()
-            # TODO Remove testing here
-        self.after(update_rate, self.update)
-
-    def wait_spin(self):
-        """
-        Spins the gif animation by altering the image frame
-
-        :return: None
-        """
-        if self.frame < 16:
-            self.frame = self.frame + 1
-            wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
-            self.picture.configure(file=wheel_filename, format="gif -index {}".format(self.frame))
-        else:
-            self.frame = 0
+        self.image_button.pack(side="left")
+        self.image_button.bind("<Button-1>", self.click)
+        self.image_button.bind("<Button-1>", self.select_unzoomed_button_pub, add="+")
 
     @staticmethod
     def click(event):
@@ -213,18 +177,8 @@ class PictureZoomed(tk.Frame):
         self.back_button.pack(side="top", anchor="ne", fill="both", padx=5, pady=int(100 * scale_factor))
         self.back_button.bind("<Button-1>", self.zoomed_back_button_pub)
 
-        master.after(update_rate, self.update())
-
-    def update(self):
-        """
-        Deletes the loading wheel once system is ready, updates image and zooms in on it and loads it. Then  it binds
-        image to callback. Just spins wheel if system is waiting
-
-        :return: None
-        """
         image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
         self.picture.configure(file=image_zoom_filename, format="png")
-        self.after(update_rate, self.update)
 
     def click(self, event):
         """
@@ -292,19 +246,6 @@ class PictureSelected(tk.Frame):
         self.yes_button.pack(side="top", anchor="ne", padx=5)
 
         self.no_button.pack(side="top", anchor="ne", padx=5)
-
-        master.after(update_rate, self.update())
-
-    def update(self):
-        """
-        Populates the image and allows the user to confirm it.
-
-        :return: None
-        """
-
-        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
-        self.picture.configure(file=image_zoom_filename, format="png")
-        self.after(update_rate, self.update)
 
     @staticmethod
     def publish_point(event):
