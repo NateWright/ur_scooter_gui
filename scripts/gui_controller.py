@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # Use this one for python2
 ###asdasd!/usr/bin/env python2

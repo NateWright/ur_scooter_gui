@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # This next one for python2
 # #!/usr/bin/env python2
@@ -19,8 +19,7 @@ import os
 
 success = None
 image_required = False
-# 8 Hz
-update_rate = 500  # In milliseconds
+update_rate = 333  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
 image = None
@@ -281,11 +280,9 @@ class Success(tk.Frame):
         self.label.pack()
 
         self.frame = 0
-        loading_wheel_filename = os.path.join(directory, "../assets/loading_wheel.gif")
-        self.picture = tk.PhotoImage(file=loading_wheel_filename, format="gif -index {}".format(self.frame))
+        loading_wheel_filename = os.path.join(directory, "../assets/loading_wheel.png")
+        self.picture = tk.PhotoImage(file=loading_wheel_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
-        # TODO Find a way to switch pack location in the update statement
-        # TODO Currently it spins the loading wheel on left side which is ugly lol
         self.picture_label = tk.Label(self, image=self.picture).pack(side="left")
 
         self.button = tk.Button(self, text="Next Grasp", width=12, height=4, font=large_font,
@@ -294,28 +291,23 @@ class Success(tk.Frame):
         master.after(update_rate, self.update())
 
     def update(self):
-        """
-        Spins the loading wheel unless the tester has published whether it was a success or not
-        """
-
+        self.wait_spin()
         if success is None:
-            self.wait_spin()
+            self.after(update_rate, self.update)
+        else:
+            if success:
+                green_checkmark_filename = os.path.join(directory, "../assets/green_checkmark.png")
+                self.picture.configure(file=green_checkmark_filename, format="png")
+                self.label.configure(text="Success :)", font=small_font)
+                self.button.configure(activebackground="lime", bg="lime")
+                self.button.pack(side="right")
 
-        elif success:
-            green_checkmark_filename = os.path.join(directory, "../assets/green_checkmark.png")
-            self.picture.configure(file=green_checkmark_filename, format="png")
-            self.label.configure(text="Success :)", font=small_font)
-            self.button.configure(activebackground="lime", bg="lime")
-            self.button.pack(side="right")
-
-        elif not success:
-            red_x_filename = os.path.join(directory, "../assets/red_x.png")
-            self.picture.configure(file=red_x_filename, format="png")
-            self.label.configure(text="Failure :(", font=small_font)
-            self.button.configure(activebackground="red", bg="red")
-            self.button.pack(side="right")
-
-        self.after(update_rate, self.update)
+            elif not success:
+                red_x_filename = os.path.join(directory, "../assets/red_x.png")
+                self.picture.configure(file=red_x_filename, format="png")
+                self.label.configure(text="Failure :(", font=small_font)
+                self.button.configure(activebackground="red", bg="red")
+                self.button.pack(side="right")
 
     def wait_spin(self):
         """
