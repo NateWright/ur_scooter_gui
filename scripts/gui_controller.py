@@ -1,17 +1,17 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Use this one for python2
-###asdasd!/usr/bin/env python2
+# !/usr/bin/env python2
 
 import rospy
 from std_msgs.msg import String
 from std_msgs.msg import UInt32MultiArray
 
-#try:
-# TODO reimplement this
-from simple_ui import Scooter
-# except ImportError:
-    # from mock_scooter import Scooter
+try:
+    from simple_ui import Scooter
+except ImportError as e:
+    print("import error:{}".format(e))
+    from mock_scooter import Scooter
 
 
 class GuiController:
@@ -22,7 +22,7 @@ class GuiController:
 
     def __init__(self):
         self.state = "drive"
-        self.prev_state = None
+        self.prev_state = "init"
         self.desired_state = None
 
         self.scooter = Scooter()
@@ -80,8 +80,10 @@ class GuiController:
         """
         Stow the arm in front of the scooter. Wait until begin button is pressed in GUI for change
         """
-        self.scooter.go_to_travel_config()
-        self.scooter.set_gripper(False)
+        if self.prev_state == "init":
+            self.prev_state = "done_startup"
+            self.scooter.go_to_travel_config()
+            self.scooter.set_gripper(False)
         if self.desired_state == "gather_pick_cloud":
             self.prev_state = self.state
             self.state = "gather_pick_cloud"
@@ -91,6 +93,7 @@ class GuiController:
         Move the arm to the right side of the robot in stow position and proceed to alternate between the depth sensors
         to build a full image of the environment
         """
+        # TODO return a true value in go to fold config once done and block that way
         self.scooter.go_to_fold_config()
 
         if self.scooter.skip_grasp and self.scooter.has_saved_pointcloud():
@@ -104,15 +107,12 @@ class GuiController:
         self.prev_state = self.state
         self.state = "object_select"
 
-    # TODO This is the function that will need to integrate with Sasha's stuff
     def object_select(self):
         if self.point is not None:
             print("This is where you should run your code to segment the object and set self.center")
             self.prev_state = self.state
             self.state = "segment_object"
-            # TODO Determine if this is meant to go up to 640 or 639
             self.center = self.scooter.center_from_2d_selection(self.point)
-            # TODO Implement Image back propagation from point cloud so we can ask user if this is the correct object
 
     def segment_object(self):
         """
@@ -169,7 +169,7 @@ class GuiController:
         drive config
         """
         self.scooter.place_object_to_basket()
-        self.prev_state = self.state
+        self.prev_state = "init"
         self.state = "drive"
 
     def run(self):

@@ -17,12 +17,21 @@ the original image
 Publishes a simple string containing the current state, next state, and button pressed to cause the transition
 
 # Running Code
-* git clone https://github.com/PatrickCPE/ur_scooter_gui.git ~/catkin_ws/src/
-* cd ~/catkin_ws
-* catkin build
-* roslaunch ur_scooter_gui ur_scooter_gui.launch testing:=false controller:=false test_success:=false
+```shell
+git clone https://github.com/PatrickCPE/ur_scooter_gui.git ~/catkin_ws/src/
+cd ~/catkin_ws
+cp src/ur_scooter_gui/scripts/gui_controller.pu src/ur_scooter/scripts
+catkin build
 
-Testing publishes a test image. When set true, controller runs the real State machine if it exists, and the test version if it does not. Test success auto publishes whether the trial was a success of failure if set true
+roslaunch ur_scooter_gui ur_scooter_gui.launch testing:=false controller:=false test_success:=false
+
+#In parallel terminal run
+rosrun ur_scooter gui_controller.pu
+```
+
+Testing publishes a test image. When set true, controller runs the real State machine if it exists, and the test version if it does not. Test success auto publishes whether the trial was a success of failure if set true.
+
+Controller must be copied to the ur_scooter directory because our initial project is structured wrong <3
 
 # Requirements
 For Python 2.7
