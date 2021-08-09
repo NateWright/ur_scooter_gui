@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
 # Use this one for python2
 # !/usr/bin/env python2
@@ -108,11 +108,12 @@ class GuiController:
         self.state = "object_select"
 
     def object_select(self):
-        if self.point is not None:
-            print("This is where you should run your code to segment the object and set self.center")
-            self.prev_state = self.state
-            self.state = "segment_object"
-            self.center = self.scooter.center_from_2d_selection(self.point)
+        while self.point is None:
+            pass
+
+        self.prev_state = self.state
+        self.state = "segment_object"
+        self.center = self.scooter.center_from_2d_selection(self.point)
 
     def segment_object(self):
         """
@@ -123,6 +124,7 @@ class GuiController:
         print("Selection made at:{}".format(self.center))
         self.sample_points = self.scooter.get_sample_points(self.center)
 
+        # TODO Pretty sure these two lines are already done in get_sample_point by default so remove
         if len(self.sample_points) == 0:
             self.sample_points = self.scooter.get_sample_points_by_radius(self.center)
 
@@ -138,8 +140,8 @@ class GuiController:
             self.prev_state = self.state
             if self.scooter.skip_grasp:
                 # Clear the no longer needed globals for partial trials
-                self.scooter.clear_sample_points()
                 self.state = "drive"
+                self.reset_state_machine()
             else:
                 self.state = "pick_object"
         # TODO Implement denial logic on the gui side if we want to do that
@@ -159,8 +161,10 @@ class GuiController:
             if self.scooter.object_detected():
                 self.state = "basket"
             else:
+                print("Grasp failed")
                 self.state = "drive"
         else:
+            print("No Grasps found")
             self.state = "drive"
 
     def basket(self):
@@ -168,9 +172,17 @@ class GuiController:
         Move the arm to hover over the basket and proceed to drop the object. The system then proceeds to its initial
         drive config
         """
+        self.reset_state_machine()
         self.scooter.place_object_to_basket()
+
+    def reset_state_machine(self):
         self.prev_state = "init"
         self.state = "drive"
+        self.point = None
+        self.center = None
+        self.desired_state = None
+        self.sample_points = None
+        self.scooter.clear_sample_points()
 
     def run(self):
         """
