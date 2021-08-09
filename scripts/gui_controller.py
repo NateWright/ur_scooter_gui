@@ -82,9 +82,13 @@ class GuiController:
         """
         if self.prev_state == "init":
             self.prev_state = "done_startup"
+            # TODO Remove
+            print("Going to travel Config")
             self.scooter.go_to_travel_config()
             self.scooter.set_gripper(False)
         if self.desired_state == "gather_pick_cloud":
+            # TODO Remove
+            print("Going to gather_pick_cloud")
             self.prev_state = self.state
             self.state = "gather_pick_cloud"
 
@@ -94,13 +98,20 @@ class GuiController:
         to build a full image of the environment
         """
         # TODO return a true value in go to fold config once done and block that way
+        # TODO Remove
+        print("Going to fold config")
         self.scooter.go_to_fold_config()
 
+
         if self.scooter.skip_grasp and self.scooter.has_saved_pointcloud():
+            print("Publishing Saved Cloud")
             self.scooter.publish_saved_pointcloud()
+            # TODO Remove
         else:
             # TODO Modified update_point_cloud to handle Sasha code
             # self.scooter.update_pointcloud()  # Removed for the 2D point version below
+            # TODO Remove
+            print("Updating pointcloud and saving")
             self.scooter.update_pointcloud_2d_selection()
             self.scooter.save_pointcloud()
 
@@ -108,12 +119,12 @@ class GuiController:
         self.state = "object_select"
 
     def object_select(self):
-        while self.point is None:
-            pass
-
-        self.prev_state = self.state
-        self.state = "segment_object"
-        self.center = self.scooter.center_from_2d_selection(self.point)
+        if self.point is None:
+            print("Point is still None")
+        else:
+            self.prev_state = self.state
+            self.state = "segment_object"
+            self.center = self.scooter.center_from_2d_selection(self.point)
 
     def segment_object(self):
         """
@@ -122,6 +133,7 @@ class GuiController:
         sphere in euclidean space and send all depth points within that sphere onto the grasp selection algorithm.
         """
         print("Selection made at:{}".format(self.center))
+        print("Obtaining Sample Points")
         self.sample_points = self.scooter.get_sample_points(self.center)
 
         # TODO Pretty sure these two lines are already done in get_sample_point by default so remove
@@ -195,7 +207,8 @@ class GuiController:
 
 def main():
     print("GUI Controller Spinning Up")
-    rospy.init_node("Gui_controller", anonymous=True)
+    # TODO Remove this node because running in scooter instance
+    # rospy.init_node("Gui_controller", anonymous=True)
     gui = GuiController()
     gui.run()
 
