@@ -254,7 +254,7 @@ class PictureSelected(tk.Frame):
         unzoomed_filename = os.path.join(directory, "../assets/unzoomed.png")
         cv_image = cv2.imread(unzoomed_filename)
         x_dim = cv_image.shape[1]
-        downscale_factor = x_dim / 640  # Yields the factor we need to divide circle_coordinates by
+        downscale_factor = x_dim / 639  # Yields the factor we need to divide circle_coordinates by
 
         array.data = [int(circle_coordinate[0] / downscale_factor), int(circle_coordinate[1] / downscale_factor)]
         point_pub.publish(array)
