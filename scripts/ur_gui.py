@@ -25,6 +25,7 @@ circle_coordinate = None
 image = None
 scale_factor = 1.5  # Scale factor for all assets relative to the native 640x480 image
 directory = os.path.dirname(__file__)
+huge_font = ("Helvetica", 120, "bold")
 large_font = ("Helvetica", 60, "bold")
 small_font = ("Helvetica", 36)
 
@@ -222,21 +223,21 @@ class PictureSelected(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
 
-        tk.Label(self, text="Please confirm whether this is the correct object", font=small_font).pack()
+        tk.Label(self, text="Is this the correct object", font=small_font).pack()
 
         image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
         self.picture = tk.PhotoImage(file=image_zoom_filename, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
         tk.Label(self, image=self.picture).pack(side="left")
-        button_height = 3
-        button_width = 8
-        self.yes_button = tk.Button(self, text="Correct", width=button_width, height=button_height, font=large_font,
+        button_height = 2
+        button_width = 5
+        self.yes_button = tk.Button(self, text="✓", width=button_width, height=button_height, font=huge_font,
                                     activebackground="lime", bg="lime", command=lambda: master.switch_frame(Success))
 
         self.yes_button.bind("<Button-1>", self.publish_point)
         self.yes_button.bind("<Button-1>", self.selected_correct_button_pub, add="+")
 
-        self.no_button = tk.Button(self, text="Wrong", width=button_width, height=button_height, font=large_font,
+        self.no_button = tk.Button(self, text="X", width=button_width, height=button_height, font=huge_font,
                                    activebackground="red", bg="red",
                                    command=lambda: master.switch_frame(PictureInitial))
 
