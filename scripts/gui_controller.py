@@ -5,7 +5,9 @@
 
 import rospy
 from std_msgs.msg import String
+from std_msgs.msg import Bool
 from std_msgs.msg import UInt32MultiArray
+import copy
 
 try:
     from simple_ui import Scooter
@@ -28,6 +30,8 @@ class GuiController:
         self.scooter = Scooter()
         self.state_sub = rospy.Subscriber("desired_state", String, self.state_sub_cb)
         self.state_sub = rospy.Subscriber("point", UInt32MultiArray, self.point_sub_cb)
+        # TODO remove this for user study and publish success by hand regardless of grasp success
+        self.success_pub = rospy.Publisher('success', Bool, latch=True, queue_size=10)
         self.rate = rospy.Rate(30)
 
         self.sample_points = None
@@ -82,9 +86,12 @@ class GuiController:
         """
         if self.prev_state == "init":
             self.prev_state = "done_startup"
-            # TODO Remove
+            # TODO rmeove
             print("Going to travel Config")
-            self.scooter.go_to_travel_config()
+            # TODO Modifying this to see if move to fold config will work properly instead
+            # self.scooter.go_to_travel_config()
+            self.scooter.go_to_fold_config()
+
             self.scooter.set_gripper(False)
         if self.desired_state == "gather_pick_cloud":
             # TODO Remove
@@ -124,6 +131,7 @@ class GuiController:
         else:
             self.prev_state = self.state
             self.state = "segment_object"
+            print("Passing {} to Sasha's Code".format(self.point))
             self.center = self.scooter.center_from_2d_selection(self.point)
 
     def segment_object(self):
@@ -146,6 +154,7 @@ class GuiController:
     def object_confirmation(self):
         """
         Wait for the GUI to prompt for a full pick. If it's a full trial it will grasp the object. If not then we clear
+        # False means don't go to travel config. Remain in scan position
         the previous globals and return to drive
         """
         if self.desired_state == "pick_object":
@@ -153,7 +162,8 @@ class GuiController:
             if self.scooter.skip_grasp:
                 # Clear the no longer needed globals for partial trials
                 self.state = "drive"
-                self.reset_state_machine()
+                # False means don't go to travel config. Remain in scan position
+                self.reset_state_machine(False)
             else:
                 self.state = "pick_object"
         # TODO Implement denial logic on the gui side if we want to do that
@@ -175,8 +185,15 @@ class GuiController:
             else:
                 print("Grasp failed")
                 self.state = "drive"
+
+                self.reset_state_machine(True)
+                # TODO Remove the pub if we want to publish success by hand for user study
+                self.success_pub.publish(False)
         else:
             print("No Grasps found")
+            # TODO Remove the pub if we want to publish success by hand for user study
+            self.reset_state_machine(True)
+            self.success_pub.publish(False)
             self.state = "drive"
 
     def basket(self):
@@ -184,10 +201,14 @@ class GuiController:
         Move the arm to hover over the basket and proceed to drop the object. The system then proceeds to its initial
         drive config
         """
-        self.reset_state_machine()
         self.scooter.place_object_to_basket()
 
-    def reset_state_machine(self):
+        # True means go to travel config
+        self.reset_state_machine(True)
+        # TODO Remove the pub if we want to publish success by hand for user study
+        self.success_pub.publish(True)
+
+    def reset_state_machine(self, travel_config):
         self.prev_state = "init"
         self.state = "drive"
         self.point = None
@@ -195,6 +216,10 @@ class GuiController:
         self.desired_state = None
         self.sample_points = None
         self.scooter.clear_sample_points()
+        if travel_config:
+            # TODO testing if this will work properly with the trajectory planner
+            #self.scooter.go_to_travel_config()
+            self.scooter.go_to_fold_config()
 
     def run(self):
         """

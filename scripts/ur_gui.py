@@ -1,7 +1,9 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 
 # This next one for python2
 # #!/usr/bin/env python2
+
 
 try:
     import tkinter as tk
@@ -19,6 +21,7 @@ import os
 
 success = None
 image_required = False
+image_unzoomed_ready = False
 update_rate = 333  # In milliseconds
 zoom_coordinate = None
 circle_coordinate = None
@@ -77,7 +80,7 @@ class StartPage(tk.Frame):
 
     @staticmethod
     def begin_button_pub(event):
-        log_pub.publish("begin, image_unzoomed, begin_button")
+        log_pub.publish("drive_mode, image_unzoomed, begin_button")
         desired_state_pub.publish("gather_pick_cloud")
 
 
@@ -92,7 +95,8 @@ class PictureInitial(tk.Frame):
         self.label = tk.Label(self, text="Please click the object on the touchscreen",
                               font=small_font).pack(side="top", fill="x",
                                                     pady=10)
-
+        while not image_unzoomed_ready:
+            print("Waiting for camera to save picture")
         image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
         self.picture = tk.PhotoImage(file=image_unzoomed, format="png")
         tk.Frame.photo = self.picture  # Needed to prevent garbage collector
@@ -254,11 +258,23 @@ class PictureSelected(tk.Frame):
 
         unzoomed_filename = os.path.join(directory, "../assets/unzoomed.png")
         cv_image = cv2.imread(unzoomed_filename)
-        x_dim = cv_image.shape[1]
-        downscale_factor = x_dim / 639  # Yields the factor we need to divide circle_coordinates by
 
-        array.data = [int(circle_coordinate[0] / downscale_factor), int(circle_coordinate[1] / downscale_factor)]
+        x_dim = cv_image.shape[1]
+        y_dim = cv_image.shape[0]
+        x_downscale_factor = x_dim / 639.0  # Yields the factor we need to divide circle_coordinates by
+        y_downscale_factor = y_dim / 479.0  # Yields the factor we need to divide circle_coordinates by
+
+        array.data = [int(circle_coordinate[0] / x_downscale_factor), int(circle_coordinate[1] / y_downscale_factor)]
+        print("Data:{}".format(array.data))
         point_pub.publish(array)
+
+        # TODO Move this into it's own button callback
+        image_zoom_filename = os.path.join(directory, "../assets/image_zoomed.png")
+        image_with_dot = cv2.imread(image_zoom_filename, 1)
+
+        bridge = CvBridge()
+        final_image = bridge.cv2_to_imgmsg(image_with_dot, encoding="bgr8")
+        selected_image_pub.publish(final_image)
 
     @staticmethod
     def selected_correct_button_pub(event):
@@ -327,7 +343,7 @@ class Success(tk.Frame):
     @staticmethod
     def next_grasp_button_pub(event):
         # TODO Determine if we want just the success state or the individual result with team
-        log_pub.publish("success, begin, next_grasp_button")
+        log_pub.publish("success, drive_mode, next_grasp_button")
 
 
 def success_cb(data):
@@ -350,7 +366,9 @@ def image_cb(data):
     :return: None
     """
     global image_required
+    global image_unzoomed_ready
     if image_required:
+        image_unzoomed_ready = False
         bridge = CvBridge()
         try:
             cv_image = bridge.imgmsg_to_cv2(data, "bgr8")
@@ -362,6 +380,7 @@ def image_cb(data):
             image_unzoomed = os.path.join(directory, "../assets/unzoomed.png")
             cv2.imwrite(image_unzoomed, cv_image)
             image_required = False
+            image_unzoomed_ready = True
 
         except CvBridgeError as error:
             print(error)
@@ -375,6 +394,7 @@ if __name__ == "__main__":
     point_pub = rospy.Publisher("point", UInt32MultiArray, latch=True, queue_size=10)
     log_pub = rospy.Publisher("logging_topic", String, latch=True, queue_size=10)
     desired_state_pub = rospy.Publisher("desired_state", String, latch=True, queue_size=10)
+    selected_image_pub = rospy.Publisher("selected_image", Image, latch=True, queue_size=10)
     app = SampleApp()
     # TODO Swap mainloop out for lower refresh rate
     app.mainloop()
