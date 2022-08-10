@@ -31,6 +31,7 @@ directory = os.path.dirname(__file__)
 huge_font = ("Helvetica", 120, "bold")
 large_font = ("Helvetica", 60, "bold")
 small_font = ("Helvetica", 36)
+app = None
 
 
 class SampleApp(tk.Tk):
@@ -386,6 +387,12 @@ def image_cb(data):
             print(error)
 
 
+def checkRos():
+    if(rospy.is_shutdown()):
+        app.destroy()
+        quit(1)
+    app.after(2000, checkRos)
+
 if __name__ == "__main__":
     rospy.init_node("GUI", anonymous=True)
     rospy.Subscriber("success", Bool, success_cb)
@@ -397,6 +404,8 @@ if __name__ == "__main__":
     selected_image_pub = rospy.Publisher("selected_image", Image, latch=True, queue_size=10)
     app = SampleApp()
     # TODO Swap mainloop out for lower refresh rate
+    app.bind('<Control-c>', quit)
+    app.after(2000, checkRos)
     app.mainloop()
     """
     while not rospy.is_shutdown():
