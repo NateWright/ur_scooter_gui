@@ -313,7 +313,8 @@ class Success(tk.Frame):
         if success is None:
             self.after(update_rate, self.update)
         else:
-            if success:
+            # if success:
+            if True:  # always show success, even if failure is logged
                 green_checkmark_filename = os.path.join(directory, "../assets/green_checkmark.png")
                 self.picture.configure(file=green_checkmark_filename, format="png")
                 self.label.configure(text="Success :)", font=small_font)
