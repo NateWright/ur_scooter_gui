@@ -61,13 +61,10 @@ class StartPage(tk.Frame):
     def __init__(self, master):
         tk.Frame.__init__(self, master)
         self.button = tk.Button(self, text="Begin", width=75, height=30, font=large_font,
-                                activebackground="lime", bg="lime", command=lambda: master.switch_frame(PictureInitial))
-        self.button.bind("<Button-1>", self.setup_globals)
-        self.button.bind("<Button-1>", self.begin_button_pub, add="+")
+                                activebackground="lime", bg="lime",command=lambda:[self.setup_globals(), self.begin_button_pub(), master.switch_frame(PictureInitial)])
         self.button.pack(fill="both", expand=True, padx=100, pady=100)
 
-    @staticmethod
-    def setup_globals(event):
+    def setup_globals(self):
         """
         Read the name
 
@@ -79,8 +76,7 @@ class StartPage(tk.Frame):
         global image_required
         image_required = True
 
-    @staticmethod
-    def begin_button_pub(event):
+    def begin_button_pub(self):
         log_pub.publish("drive_mode, image_unzoomed, begin_button")
         desired_state_pub.publish("gather_pick_cloud")
 
